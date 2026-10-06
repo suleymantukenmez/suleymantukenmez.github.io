@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="tr" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Süleyman Tükenmez | Official Portfolio</title>
+  
+  <!-- Google Fonts & Tailwind CSS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js for 3D Interactive Visuals -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['"Space Grotesk"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              gold: '#F59E0B',
+              amber: '#D97706',
+              violet: '#8B5CF6',
+              cyan: '#06B6D4',
+              dark: '#07090E',
+              darker: '#030508',
+              card: 'rgba(15, 23, 42, 0.65)',
+            }
+          },
+          animation: {
+            'glow-pulse': 'glowPulse 4s ease-in-out infinite',
+            'float': 'floating 6s ease-in-out infinite',
+            'spin-slow': 'spin 18s linear infinite',
+            'gradient-x': 'gradientX 12s ease infinite',
+          },
+          keyframes: {
+            glowPulse: {
+              '0%, 100%': { opacity: '0.4', transform: 'scale(1)' },
+              '50%': { opacity: '0.9', transform: 'scale(1.08)' },
+            },
+            floating: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-14px)' },
+            },
+            gradientX: {
+              '0%, 100%': { backgroundPosition: '0% 50%' },
+              '50%': { backgroundPosition: '100% 50%' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #04060a;
+      color: #f1f5f9;
+      overflow-x: hidden;
+      selection-background-color: #f59e0b;
+    }
+    ::selection {
+      background: #f59e0b;
+      color: #000;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #07090e;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #f59e0b;
+    }
+    
+    /* Glassmorphism Styles */
+    .glass-panel {
+      background: rgba(13, 17, 27, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+    
+    .glass-card-hover {
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .glass-card-hover:hover {
+      transform: translateY(-6px) scale(1.01);
+      border-color: rgba(245, 158, 11, 0.4);
+      box-shadow: 0 15px 35px -10px rgba(245, 158, 11, 0.2);
+    }
+
+    /* Ambient Glow background */
+    .bg-gradient-mesh {
+      background: radial-gradient(circle at 15% 20%, rgba(139, 92, 246, 0.15), transparent 45%),
+                  radial-gradient(circle at 85% 30%, rgba(245, 158, 11, 0.12), transparent 40%),
+                  radial-gradient(circle at 50% 80%, rgba(6, 182, 212, 0.12), transparent 50%);
+    }
+
+    /* Interactive Cursor Follower */
+    #cursor-blob {
+      pointer-events: none;
+      transition: transform 0.15s ease-out, opacity 0.3s;
+    }
+  </style>
+</head>
+<body class="bg-brand-darker font-sans text-slate-100 min-h-screen relative antialiased selection:bg-brand-gold selection:text-black">
+
+  <!-- 3D Three.js Background Canvas -->
+  <canvas id="webgl-canvas" class="fixed inset-0 w-full h-full pointer-events-none z-0 opacity-70"></canvas>
+
+  <!-- Ambient Light Blurs -->
+  <div class="fixed inset-0 pointer-events-none z-0 bg-gradient-mesh"></div>
+  <div id="cursor-blob" class="fixed w-96 h-96 rounded-full bg-gradient-to-r from-amber-500/10 via-purple-600/10 to-cyan-500/10 blur-3xl z-0 -top-48 -left-48"></div>
+
+  <!-- Notification Toast Modal Container -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none flex items-center space-x-3 px-5 py-3.5 rounded-2xl glass-panel border border-brand-gold/40 shadow-2xl shadow-brand-gold/10">
+    <div class="w-8 h-8 rounded-full bg-brand-gold/20 flex items-center justify-center text-brand-gold">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+    </div>
+    <div class="text-sm font-medium" id="toast-text">İşlem başarıyla tamamlandı!</div>
+  </div>
+
+  <header class="fixed top-0 left-0 right-0 z-40 px-4 md:px-12 py-4">
+    <div class="max-w-7xl mx-auto flex items-center justify-between px-6 py-3.5 rounded-full glass-panel border border-white/10 shadow-lg">
+      <!-- Logo -->
+      <a href="#hero" class="flex items-center space-x-3 group">
+        <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-amber via-brand-gold to-yellow-200 p-[2px] transition-transform duration-500 group-hover:rotate-180">
+          <div class="w-full h-full bg-brand-darker rounded-full flex items-center justify-center font-display font-bold text-brand-gold text-lg tracking-wider">
+            ST
+          </div>
+        </div>
+        <div class="flex flex-col">
+          <span class="font-display font-bold text-base md:text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-amber-200">
+            Süleyman Tükenmez
+          </span>
+          <span class="text-[10px] uppercase font-semibold tracking-widest text-brand-gold/80 -mt-0.5">
+            Personal Portfolio
+          </span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation Links -->
+      <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-300">
+        <a href="#about" class="hover:text-brand-gold transition-colors duration-200">Hakkımda</a>
+        <a href="#skills" class="hover:text-brand-gold transition-colors duration-200">Vizyon & Yetenek</a>
+        <a href="#experience" class="hover:text-brand-gold transition-colors duration-200">Kariyer</a>
+        <a href="#contact" class="hover:text-brand-gold transition-colors duration-200">İletişim</a>
+      </nav>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center space-x-3">
+        <a href="https://instagram.com/suleyman.tknmz" target="_blank" rel="noopener noreferrer" 
+           class="hidden sm:inline-flex items-center space-x-2 text-xs font-semibold px-4 py-2 rounded-full border border-pink-500/30 text-pink-400 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-300 hover:scale-105">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.13-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+          <span>@suleyman.tknmz</span>
+        </a>
+        <a href="#contact" class="px-5 py-2.5 rounded-full text-xs font-bold tracking-wide uppercase bg-gradient-to-r from-brand-gold via-amber-400 to-yellow-500 text-black shadow-lg shadow-brand-gold/25 hover:shadow-brand-gold/40 hover:scale-105 active:scale-95 transition-all duration-300">
+          Görüşelim
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="relative z-10">
+    <section id="hero" class="min-h-screen flex items-center justify-center pt-28 pb-16 px-4 md:px-8">
+      <div class="max-w-5xl mx-auto text-center flex flex-col items-center">
+        
+        <!-- Premium Status Badge -->
+        <div class="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full glass-panel border border-brand-gold/30 text-brand-gold text-xs font-semibold mb-8 animate-float shadow-xl">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span class="w-2 h-2 rounded-full bg-emerald-400 -ml-3"></span>
+          <span class="tracking-wide">YENİ NESİL VİZYON & DİJİTAL DÜNYA</span>
+        </div>
+
+        <!-- Big Hero Heading -->
+        <h1 class="font-display font-extrabold text-4xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tight leading-[1.08] mb-6">
+          Merhaba, Ben <br/>
+          <span class="bg-clip-text text-transparent bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-200 drop-shadow-sm">
+            Süleyman Tükenmez
+          </span>
+        </h1>
+
+        <!-- Subtitle -->
+        <p class="max-w-2xl text-base sm:text-lg md:text-xl text-slate-300 font-light leading-relaxed mb-10">
+          Geleceğin fikirlerini teknoloji, estetik ve yenilikçi bakış açısıyla harmanlayan modern ve dinamik bir profil. Dijital dünyada iz bırakan adımlar ve sürdürülebilir başarılar.
+        </p>
+
+        <!-- CTA Buttons -->
+        <div class="flex flex-wrap items-center justify-center gap-4 w-full sm:w-auto">
+          <a href="#contact" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-brand-gold to-amber-500 text-black font-bold text-sm tracking-wide uppercase shadow-xl shadow-brand-gold/25 hover:shadow-brand-gold/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center space-x-3">
+            <span>İletişime Geç</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+          </a>
+          <button onclick="copyEmail()" class="w-full sm:w-auto px-8 py-4 rounded-2xl glass-panel border border-white/15 text-slate-200 hover:text-white font-semibold text-sm hover:border-brand-gold/50 hover:bg-white/5 transition-all duration-300 flex items-center justify-center space-x-3">
+            <svg class="w-4 h-4 text-brand-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+            <span>E-postayı Kopyala</span>
+          </button>
+        </div>
+
+        <!-- Social Quick Hub -->
+        <div class="mt-14 pt-10 border-t border-white/10 w-full max-w-xl flex flex-wrap items-center justify-around gap-6 text-slate-400 text-xs">
+          <div class="flex items-center space-x-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-brand-gold"></span>
+            <span>Konum: <strong>İstanbul / Türkiye</strong></span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-brand-violet"></span>
+            <span>Instagram: <strong class="text-pink-400">@suleyman.tknmz</strong></span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+            <span>Statü: <strong class="text-white">Aktif & Projelere Açık</strong></span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section id="about" class="py-24 px-4 md:px-8 max-w-7xl mx-auto">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        
+        <!-- Left Visual / Interactive 3D Card -->
+        <div class="lg:col-span-5 relative group">
+          <div class="absolute -inset-1 bg-gradient-to-r from-brand-gold via-purple-600 to-cyan-500 rounded-3xl blur-xl opacity-30 group-hover:opacity-60 transition duration-1000 group-hover:duration-300"></div>
+          
+          <div class="relative glass-panel rounded-3xl p-8 border border-white/10 overflow-hidden flex flex-col justify-between min-h-[440px]">
+            <!-- Top badge -->
+            <div class="flex justify-between items-start">
+              <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-600 flex items-center justify-center font-display font-extrabold text-2xl text-black shadow-lg shadow-amber-500/30">
+                ST
+              </div>
+              <span class="px-3 py-1 text-xs rounded-full bg-white/5 border border-white/10 text-slate-300">
+                Biyografi & Vizyon
+              </span>
+            </div>
+
+            <!-- Middle dynamic text -->
+            <div class="my-6">
+              <h3 class="text-2xl font-display font-bold text-white mb-2">Süleyman Tükenmez</h3>
+              <p class="text-brand-gold text-sm font-medium tracking-wide">Yenilikçi Düşünür & Girişimci Ruh</p>
+              <p class="text-slate-300 text-sm mt-4 leading-relaxed font-light">
+                Teknolojiye duyduğum tutku, sürekli öğrenme merakım ve estetik standartlarım ile dijital dünyada fark yaratmayı hedefliyorum. Her zaman en iyisini üretmek ve kalıcı değerler inşa etmek ana felsefem.
+              </p>
+            </div>
+
+            <!-- Bottom Stats -->
+            <div class="grid grid-cols-3 gap-2 pt-6 border-t border-white/10 text-center">
+              <div>
+                <p class="text-xl font-display font-bold text-brand-gold">100%</p>
+                <p class="text-[11px] text-slate-400">Adanmışlık</p>
+              </div>
+              <div>
+                <p class="text-xl font-display font-bold text-cyan-400">Modern</p>
+                <p class="text-[11px] text-slate-400">Teknoloji</p>
+              </div>
+              <div>
+                <p class="text-xl font-display font-bold text-brand-violet">24/7</p>
+                <p class="text-[11px] text-slate-400">Vizyon</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Right Content Cards -->
+        <div class="lg:col-span-7 flex flex-col justify-center space-y-6">
+          <div class="space-y-3">
+            <span class="text-brand-gold text-xs font-bold tracking-widest uppercase">Karakter & Hedefler</span>
+            <h2 class="text-3xl sm:text-4xl font-display font-extrabold text-white tracking-tight">
+              Yüksek Standartlar, Sıra Dışı Sonuçlar.
+            </h2>
+            <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
+              Her detayında kaliteyi ve zarafeti barındıran bir duruş ile geleceğe odaklanıyorum. Fikirleri somut ve etkileyici sonuçlara dönüştürmek için dijital ekosistemin tüm nimetlerini kullanıyorum.
+            </p>
+          </div>
+
+          <!-- Feature items -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            
+            <div class="glass-panel p-5 rounded-2xl glass-card-hover border border-white/10">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mb-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              </div>
+              <h4 class="font-display font-bold text-white text-base mb-1">Dinamizm & Hız</h4>
+              <p class="text-slate-400 text-xs leading-relaxed">Hızla değişen trendleri anında benimseyip en verimli şekilde hayata geçirme kabiliyeti.</p>
+            </div>
+
+            <div class="glass-panel p-5 rounded-2xl glass-card-hover border border-white/10">
+              <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center mb-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+              </div>
+              <h4 class="font-display font-bold text-white text-base mb-1">Stratejik Vizyon</h4>
+              <p class="text-slate-400 text-xs leading-relaxed">Sadece bugünü değil, yarının ihtiyaçlarını önceden sezerek adımlar atma gücü.</p>
+            </div>
+
+            <div class="glass-panel p-5 rounded-2xl glass-card-hover border border-white/10">
+              <div class="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center mb-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg>
+              </div>
+              <h4 class="font-display font-bold text-white text-base mb-1">Kusursuz Estetik</h4>
+              <p class="text-slate-400 text-xs leading-relaxed">Her arayüzde, her detayda premium lüks ve görsel akıcılık garantisi.</p>
+            </div>
+
+            <div class="glass-panel p-5 rounded-2xl glass-card-hover border border-white/10">
+              <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+              </div>
+              <h4 class="font-display font-bold text-white text-base mb-1">Güven & Süreklilik</h4>
+              <p class="text-slate-400 text-xs leading-relaxed">Güçlü iletişim, şeffaf yaklaşım ve uzun soluklu iş birlikleri.</p>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <section id="skills" class="py-24 px-4 md:px-8 max-w-7xl mx-auto border-t border-white/5">
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="text-brand-gold text-xs font-bold tracking-widest uppercase">Yetenekler & Odak Noktaları</span>
+        <h2 class="text-3xl sm:text-5xl font-display font-extrabold text-white tracking-tight mt-2">
+          Uzmanlık & İlgi Alanları
+        </h2>
+        <p class="text-slate-400 text-sm sm:text-base mt-4">
+          Gelişimi ve modern dünya teknolojilerini merkeze alan uzmanlık ve beceri portföyü.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Skill 1 -->
+        <div class="glass-panel p-8 rounded-3xl glass-card-hover border border-white/10 relative overflow-hidden">
+          <div class="absolute -right-8 -top-8 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl"></div>
+          <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-brand-gold mb-6">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+          </div>
+          <h3 class="text-xl font-display font-bold text-white mb-2">Dijital Medya & Kimlik</h3>
+          <p class="text-slate-400 text-xs leading-relaxed mb-6">
+            Modern sosyal platformlarda güçlü bir marka ve şahsi kimlik oluşturma, etkileşimi yüksek içerik stratejileri.
+          </p>
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs font-semibold">
+              <span class="text-slate-300">Sosyal Algoritma Hakimiyeti</span>
+              <span class="text-brand-gold">95%</span>
+            </div>
+            <div class="w-full bg-white/5 h-2 rounded-full overflow-hidden">
+              <div class="bg-gradient-to-r from-amber-400 to-yellow-500 h-full rounded-full" style="width: 95%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Skill 2 -->
+        <div class="glass-panel p-8 rounded-3xl glass-card-hover border border-white/10 relative overflow-hidden">
+          <div class="absolute -right-8 -top-8 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl"></div>
+          <div class="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 mb-6">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+          </div>
+          <h3 class="text-xl font-display font-bold text-white mb-2">Modern Web & Teknoloji</h3>
+          <p class="text-slate-400 text-xs leading-relaxed mb-6">
+            Yeni nesil web teknolojileri, interaktif 3D deneyimler, akıcı animasyonlar ve yüksek kullanıcı deneyimi vizyonu.
+          </p>
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs font-semibold">
+              <span class="text-slate-300">UI / UX & Tasarım Vizyonu</span>
+              <span class="text-purple-400">90%</span>
+            </div>
+            <div class="w-full bg-white/5 h-2 rounded-full overflow-hidden">
+              <div class="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-full" style="width: 90%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Skill 3 -->
+        <div class="glass-panel p-8 rounded-3xl glass-card-hover border border-white/10 relative overflow-hidden">
+          <div class="absolute -right-8 -top-8 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl"></div>
+          <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mb-6">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+          </div>
+          <h3 class="text-xl font-display font-bold text-white mb-2">Yönetim & İletişim</h3>
+          <p class="text-slate-400 text-xs leading-relaxed mb-6">
+            Kriz yönetimi, etkili müzakere, vizyoner liderlik ve projeleri zamanında başarıya ulaştırma disiplini.
+          </p>
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs font-semibold">
+              <span class="text-slate-300">Kişisel İletişim Gücü</span>
+              <span class="text-cyan-400">98%</span>
+            </div>
+            <div class="w-full bg-white/5 h-2 rounded-full overflow-hidden">
+              <div class="bg-gradient-to-r from-cyan-400 to-blue-500 h-full rounded-full" style="width: 98%"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section id="experience" class="py-24 px-4 md:px-8 max-w-5xl mx-auto">
+      <div class="text-center mb-16">
+        <span class="text-brand-gold text-xs font-bold tracking-widest uppercase">Yol Haritası</span>
+        <h2 class="text-3xl sm:text-5xl font-display font-extrabold text-white tracking-tight mt-2">
+          Gelişim Çizelgesi
+        </h2>
+        <p class="text-slate-400 text-sm mt-3">Sürekli kendini aşmaya odaklı bir kariyer serüveni.</p>
+      </div>
+
+      <!-- Timeline Items -->
+      <div class="relative border-l border-white/10 ml-4 md:ml-32 space-y-12">
+        
+        <!-- Step 1 -->
+        <div class="relative pl-8 md:pl-12 group">
+          <div class="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-brand-gold border-4 border-brand-darker group-hover:scale-125 transition-transform duration-300 shadow-lg shadow-brand-gold/50"></div>
+          <div class="glass-panel p-6 rounded-2xl glass-card-hover border border-white/10">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <h3 class="text-lg font-display font-bold text-white">Dijital İnovasyon ve Girişimler</h3>
+              <span class="text-xs px-2.5 py-1 rounded-full bg-brand-gold/10 text-brand-gold border border-brand-gold/20 font-medium">Günümüz</span>
+            </div>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Yenilikçi projeler, modern ağ oluşturma ve dijital kanallarda güçlü şahsi temsil faaliyetleri yürütülüyor.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="relative pl-8 md:pl-12 group">
+          <div class="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-brand-violet border-4 border-brand-darker group-hover:scale-125 transition-transform duration-300 shadow-lg shadow-brand-violet/50"></div>
+          <div class="glass-panel p-6 rounded-2xl glass-card-hover border border-white/10">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <h3 class="text-lg font-display font-bold text-white">Sosyal Medya & İçerik Üretimi</h3>
+              <span class="text-xs px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 font-medium">2023 - 2024</span>
+            </div>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Instagram ve diğer mecralarda geniş kitlelerle etkileşim kurarak görsel dil ve kişisel marka kimliği güçlendirildi.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="relative pl-8 md:pl-12 group">
+          <div class="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-cyan-400 border-4 border-brand-darker group-hover:scale-125 transition-transform duration-300 shadow-lg shadow-cyan-400/50"></div>
+          <div class="glass-panel p-6 rounded-2xl glass-card-hover border border-white/10">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <h3 class="text-lg font-display font-bold text-white">Teknoloji & Temel Yetkinlikler</h3>
+              <span class="text-xs px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-medium">Başlangıç</span>
+            </div>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Dijital araçlara ilgi duyarak başlayan yolculuk, bugün profesyonel bir vizyona ve sağlam hedeflere dönüştü.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section id="contact" class="py-24 px-4 md:px-8 max-w-6xl mx-auto">
+      <div class="relative rounded-3xl glass-panel p-8 sm:p-14 border border-brand-gold/25 overflow-hidden shadow-2xl">
+        <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-brand-gold/15 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -top-24 -left-24 w-96 h-96 bg-brand-violet/15 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+          
+          <div class="lg:col-span-7 space-y-6">
+            <span class="text-brand-gold text-xs font-bold tracking-widest uppercase">Bağlantıda Kalın</span>
+            <h2 class="text-3xl sm:text-5xl font-display font-extrabold text-white tracking-tight">
+              Birlikte Büyük Şeyler <br/>İnşa Edelim.
+            </h2>
+            <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+              İş birliği teklifleri, yeni projeler ya da sadece tanışmak için dilediğin zaman iletişime geçebilirsin. En kısa sürede geri dönüş sağlayacağım.
+            </p>
+
+            <div class="space-y-4 pt-2">
+              
+              <!-- Email Card -->
+              <div class="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-brand-gold/40 transition-all duration-300">
+                <div class="flex items-center space-x-4 min-w-0">
+                  <div class="w-12 h-12 rounded-xl bg-brand-gold/10 text-brand-gold flex items-center justify-center shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                  </div>
+                  <div class="truncate">
+                    <p class="text-xs text-slate-400">E-Posta Adresi</p>
+                    <a href="mailto:suleymantukenmez2004@gmail.com" class="text-sm font-semibold text-white hover:text-brand-gold transition-colors truncate block">
+                      suleymantukenmez2004@gmail.com
+                    </a>
+                  </div>
+                </div>
+                <button onclick="copyEmail()" class="ml-2 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-brand-gold hover:text-black text-xs font-medium transition-colors shrink-0 flex items-center space-x-1" title="Kopyala">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                  <span class="hidden sm:inline">Kopyala</span>
+                </button>
+              </div>
+
+              <!-- Instagram Card -->
+              <div class="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-pink-500/40 transition-all duration-300">
+                <div class="flex items-center space-x-4 min-w-0">
+                  <div class="w-12 h-12 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center shrink-0">
+                    <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.13-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                  </div>
+                  <div class="truncate">
+                    <p class="text-xs text-slate-400">Instagram Profili</p>
+                    <span class="text-sm font-semibold text-white">@suleyman.tknmz</span>
+                  </div>
+                </div>
+                <a href="https://instagram.com/suleyman.tknmz" target="_blank" rel="noopener noreferrer" class="ml-2 px-4 py-2 rounded-xl bg-pink-500/20 text-pink-400 hover:bg-pink-500 hover:text-white text-xs font-semibold transition-all duration-300 shrink-0">
+                  Takip Et &rarr;
+                </a>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Quick Message Box Form -->
+          <div class="lg:col-span-5 bg-brand-darker/70 p-6 sm:p-8 rounded-3xl border border-white/10">
+            <h3 class="font-display font-bold text-lg text-white mb-4">Hızlı İletişim Notu</h3>
+            <form onsubmit="handleFormSubmit(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Adınız / Kurum</label>
+                <input id="form-name" type="text" required placeholder="Örn: Ahmet Yılmaz" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-gold transition-colors">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Mesajınız</label>
+                <textarea id="form-msg" rows="3" required placeholder="Mesajınızı buraya yazabilirsiniz..." class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-gold transition-colors resize-none"></textarea>
+              </div>
+              <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-brand-gold to-amber-500 text-black font-bold text-xs uppercase tracking-wider hover:opacity-95 active:scale-98 transition-all duration-200 shadow-lg shadow-brand-gold/20">
+                Mesajı Gönder (Mail Aç)
+              </button>
+            </form>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <footer class="relative z-10 border-t border-white/10 py-10 px-4">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-500">
+      
+      <div class="flex items-center space-x-2">
+        <span class="w-2 h-2 rounded-full bg-brand-gold"></span>
+        <span class="text-slate-400 font-medium">Süleyman Tükenmez &copy; 2026. Tüm Hakları Saklıdır.</span>
+      </div>
+
+      <div class="flex items-center space-x-6 text-slate-400">
+        <a href="https://instagram.com/suleyman.tknmz" target="_blank" rel="noopener noreferrer" class="hover:text-pink-400 transition-colors">
+          Instagram
+        </a>
+        <a href="mailto:suleymantukenmez2004@gmail.com" class="hover:text-brand-gold transition-colors">
+          E-Posta
+        </a>
+        <a href="#hero" class="hover:text-white transition-colors">
+          Yukarı Çık &uarr;
+        </a>
+      </div>
+
+    </div>
+  </footer>
+
+  <script>
+    // --- Custom Interactive Three.js Background ---
+    let scene, camera, renderer, particles, particleMesh;
+    let mouseX = 0, mouseY = 0;
+    let windowHalfX = window.innerWidth / 2;
+    let windowHalfY = window.innerHeight / 2;
+
+    function init3D() {
+      const canvas = document.getElementById('webgl-canvas');
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 1, 3000);
+      camera.position.z = 1000;
+
+      // Particles Geometry
+      const particleCount = 1200;
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(particleCount * 3);
+      const colors = new Float32Array(particleCount * 3);
+
+      const colorPalette = [
+        new THREE.Color('#F59E0B'), // Gold
+        new THREE.Color('#8B5CF6'), // Violet
+        new THREE.Color('#06B6D4'), // Cyan
+        new THREE.Color('#FFFFFF')  // Star white
+      ];
+
+      for (let i = 0; i < particleCount * 3; i += 3) {
+        // Spherical distribution
+        const radius = 700 + Math.random() * 600;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos((Math.random() * 2) - 1);
+
+        positions[i] = radius * Math.sin(phi) * Math.cos(theta);
+        positions[i + 1] = radius * Math.sin(phi) * Math.sin(theta);
+        positions[i + 2] = radius * Math.cos(phi);
+
+        const chosenColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+        colors[i] = chosenColor.r;
+        colors[i + 1] = chosenColor.g;
+        colors[i + 2] = chosenColor.b;
+      }
+
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      // Particle Material
+      const material = new THREE.PointsMaterial({
+        size: 3.5,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.85,
+        blending: THREE.AdditiveBlending
+      });
+
+      particleMesh = new THREE.Points(geometry, material);
+      scene.add(particleMesh);
+
+      // Renderer setup
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      // Event Listeners
+      window.addEventListener('resize', onWindowResize, false);
+      document.addEventListener('mousemove', onDocumentMouseMove, false);
+      document.addEventListener('touchmove', onTouchMove, { passive: true });
+    }
+
+    function onWindowResize() {
+      windowHalfX = window.innerWidth / 2;
+      windowHalfY = window.innerHeight / 2;
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function onDocumentMouseMove(event) {
+      mouseX = (event.clientX - windowHalfX) * 0.4;
+      mouseY = (event.clientY - windowHalfY) * 0.4;
+
+      // Mouse blob follow
+      const blob = document.getElementById('cursor-blob');
+      if (blob) {
+        blob.style.transform = `translate(${event.clientX}px, ${event.clientY}px)`;
+      }
+    }
+
+    function onTouchMove(event) {
+      if (event.touches.length > 0) {
+        mouseX = (event.touches[0].clientX - windowHalfX) * 0.5;
+        mouseY = (event.touches[0].clientY - windowHalfY) * 0.5;
+      }
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Subtle rotation & mouse reaction
+      if (particleMesh) {
+        particleMesh.rotation.y += 0.0012;
+        particleMesh.rotation.x += 0.0006;
+      }
+
+      camera.position.x += (mouseX - camera.position.x) * 0.04;
+      camera.position.y += (-mouseY - camera.position.y) * 0.04;
+      camera.lookAt(scene.position);
+
+      renderer.render(scene, camera);
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastText = document.getElementById('toast-text');
+      if (!toast || !toastText) return;
+
+      toastText.innerText = message;
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-24', 'opacity-0');
+      }, 3500);
+    }
+
+    function copyEmail() {
+      const email = 'suleymantukenmez2004@gmail.com';
+      const tempInput = document.createElement('input');
+      tempInput.value = email;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        showToast('E-posta panoya kopyalandı: ' + email);
+      } catch (err) {
+        showToast('E-posta: ' + email);
+      }
+      document.body.removeChild(tempInput);
+    }
+
+    function handleFormSubmit(event) {
+      event.preventDefault();
+      const name = document.getElementById('form-name').value;
+      const msg = document.getElementById('form-msg').value;
+
+      const subject = encodeURIComponent("Portfolio Mesajı - " + name);
+      const body = encodeURIComponent("İsim: " + name + "\n\nMesaj:\n" + msg);
+      
+      showToast('E-posta istemciniz hazırlanıyor...');
+      setTimeout(() => {
+        window.location.href = `mailto:suleymantukenmez2004@gmail.com?subject=${subject}&body=${body}`;
+      }, 700);
+    }
+
+    // Initialize all components after window load
+    window.onload = function () {
+      init3D();
+      animate();
+    };
+  </script>
+</body>
+</html>
